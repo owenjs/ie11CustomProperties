@@ -1,4 +1,4 @@
-/*! ie11CustomProperties.js v4.0.1 | MIT License | https://git.io/fjXMN */
+/*! ie11CustomProperties.js v4.1.0 | MIT License | https://git.io/fjXMN */
 !function () {
 	'use strict';
 
@@ -113,28 +113,25 @@
 	//const regHasVar = /var\(/;
 	var regPseudos = /:(hover|active|focus|target|visited|link|:before|:after|:first-letter|:first-line)/;
 
-	onElement('link[rel="stylesheet"]', function (el) {
-		fetchCss(el.href, function (css) {
-			var newCss = rewriteCss(css);
-			if (css === newCss) return;
-			newCss = relToAbs(el.href, newCss);
-			el.disabled = true;
-			var style = document.createElement('style');
-			if (el.media) style.setAttribute('media', el.media);
-			el.parentNode.insertBefore(style, el);
-			activateStyleElement(style, newCss);
-		});
-	});
-
 	function foundStyle(el){
 		if (el.ieCP_polyfilled) return;
 		if (el.ieCP_elementSheet) return;
+		if (!el.sheet) return;
+		if (el.href) {
+			return fetchCss(el.href, function (css) {
+				var newCss = rewriteCss(css);
+				if (css === newCss) return;
+				activateStyleElement(el, newCss);
+			});
+		}
+
 		var css = el.innerHTML;
 		var newCss = rewriteCss(css);
 		if (css === newCss) return;
 		activateStyleElement(el, newCss);
 	}
-	onElement('style', foundStyle);
+	onElement('style:not([iecp-ignore])', foundStyle);
+	onElement('link[rel=stylesheet]:not([iecp-ignore])', foundStyle);
 	// immediate, to pass w3c-tests, bud its a bad idea
 	// addEventListener('DOMNodeInserted',function(e){ e.target.tagName === 'STYLE' && foundStyle(e.target); });
 
@@ -147,15 +144,6 @@
 		if (found.getters) addGetterElement(el, found.getters, '%styleAttr');
 		if (found.setters) addSetterElement(el, found.setters);
 	});
-
-	function relToAbs(base, css) {
-		return css.replace(/url\(([^)]+)\)/g, function($0, $1){
-			$1 = $1.trim().replace(/(^['"]|['"]$)/g,'');
-			if ($1.match(/^([a-z]+:|\/)/)) return $0;
-			base = base.replace(/\?.*/,'');
-			return 'url('+ base + './../' + $1 +')';
-		});
-	}
 
 	// ie has a bug, where unknown properties at pseudo-selectors are computed at the element
 	// #el::after { -content:'x'; } => getComputedStyle(el)['-content'] == 'x'
@@ -210,7 +198,6 @@
 				if (propName[0] === '❗') propName = propName.substr(1);
 				getters.push(propName);
 
-				// beta
 				if (!styles_of_getter_properties[propName]) styles_of_getter_properties[propName] = [];
 				styles_of_getter_properties[propName].push(style);
 			}
@@ -229,7 +216,7 @@
 		return {getters:getters, setters:setters};
 	}
 	function activateStyleElement(style, css) {
-		style.innerHTML = css;
+		style.sheet.cssText = css;
 		style.ieCP_polyfilled = true;
 		var rules = style.sheet.rules, i=0, rule; // cssRules = CSSRuleList, rules = MSCSSRuleList
 		while (rule = rules[i++]) {
@@ -286,7 +273,6 @@
 		drawTree(el);
 	}
 
-	//beta
 	function redrawStyleSheets() {
 		for (var prop in styles_of_getter_properties) {
 			let styles = styles_of_getter_properties[prop];
@@ -319,7 +305,7 @@
 		},
 	};
 	function selectorAddPseudoListeners(selector){
-		// ie11 has the strange behavoir, that groups of selectors are individual rules, but starting with the full selector:
+		// ie11 has the strange behavior, that groups of selectors are individual rules, but starting with the full selector:
 		// td, th, button { color:red } results in this rules:
 		// "td, th, button" | "th, th" | "th"
 		selector = selector.split(',')[0];
@@ -558,9 +544,10 @@
 				if (inheritingKeywords[value] || !register[property] || register[property].inherits) {
 					//let el = this.pseudoElt ? this.computedFor : this.computedFor.parentNode;
 					let el = this.computedFor.parentNode;
-					while (el.nodeType === 1) {
-						// how slower would it be to getComputedStyle for every element, not just with defined ieCP_setters
-						if (el.ieCP_setters && el.ieCP_setters[property]) {
+					while (el && el.nodeType === 1) {
+						// without, it affects performance: 1000 els inside 100 parents: 1000ms (instead of 600ms) is it acceptable?
+						// would also remove complexity, because i can remove the ieCP_setters property
+						//if (el.ieCP_setters && el.ieCP_setters[property]) {
 							// i could make
 							// value = el.nodeType ? getComputedStyle(this.computedFor.parentNode).getPropertyValue(property)
 							// but i fear performance, stupid?
@@ -573,7 +560,7 @@
 								this.lastPropertyServedBy = el;
 								break;
 							}
-						}
+						//}
 						el = el.parentNode;
 					}
 				}

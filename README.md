@@ -1,11 +1,13 @@
+
 # CSS Variables Polyfill for IE11
-A real Custom Properties polyfill for Internet Explorer 11.  
-Used on about 11'000 [Live Websites](https://publicwww.com/websites/ie11CustomProperties/ "source")  
+The most complete "Custom Properties polyfill" for Internet Explorer 11.  
+Used on about 70'000 [Live Websites](https://publicwww.com/websites/ie11CustomProperties/ "source")  
   
 **[See the demo!](https://rawcdn.githack.com/nuxodin/ie11CustomProperties/6c465d21a8c043a45cba939995bb434966048377/demo.html)**  
 
-**New in v4.0.0: Very fast now**
-
+## Discontinued
+The IE11 market share is steadily decreasing. I personally have no need to support IE11 anymore.  
+That's why I have decided to stop working on this project.
 
 ## Features
 - chaining `--bar:var(--foo)`
@@ -21,7 +23,7 @@ Used on about 11'000 [Live Websites](https://publicwww.com/websites/ie11CustomPr
 - style-attributes `<div ie-style="--foo:bar"...`
 - cascade works
 - inheritance works
-- `!important` on setters and getters
+- `!important` on setters and getters (see limitations)
 - `inherit`, `initial`, `unset` and `revert` keyword for variables
 - SVG support
 - media-queries (redraw on media-changes)
@@ -31,7 +33,7 @@ Used on about 11'000 [Live Websites](https://publicwww.com/websites/ie11CustomPr
 ## Usage
 You only want IE11 to load the polyfill, use this snippet in the head of your html file, it just works:
 ```html
-<script>window.MSInputMethodContext && document.documentMode && document.write('<script src="https://cdn.jsdelivr.net/gh/nuxodin/ie11CustomProperties@4.0.1/ie11CustomProperties.min.js"><\x2fscript>');</script>
+<script>window.MSInputMethodContext && document.documentMode && document.write('<script src="https://cdn.jsdelivr.net/gh/nuxodin/ie11CustomProperties@4.1.0/ie11CustomProperties.min.js"><\/script>');</script>
 ```
 
 ## Help wanted!
@@ -81,14 +83,23 @@ li.iecp-u4 { color:green; }
 [![custom-properties-ie11.png](https://i.postimg.cc/bryMt02N/custom-properties-ie11.png)](https://postimg.cc/gX7N9ZDf)
 
 
-## Small limitations
+## Limitations
 #### Styles in element-attributes
 There is no way to get the raw content of style-attributes in IE11.
-Use `<div style="--color:blue" ie-style="--color:blue">` for this.
+Use `<div style="--color:blue" ie-style="--color:blue">` for this.  
 
 #### Specificity for properties containing "var()"
 ...is ~~always little~~ higher if vars are not served by root, because each selector gets an additional class-selector
 eg. `#header` results in `#header.iecp_u44`
+
+#### @import
+vars in @import is not supported at the moment
+
+#### !important
+There are problems with !important. I need a minimal, reproducible testcase on https://jsbin.com/ 
+
+#### Stylesheets outside the domain
+If you'd prefer the polyfill to ignore (not run) on a particular stylesheet add the  *iecp-ignore* tag to the link element.
 
 ## Tests
 [See the tests](https://rawcdn.githack.com/nuxodin/ie11CustomProperties/6c465d21a8c043a45cba939995bb434966048377/tests.html)  
